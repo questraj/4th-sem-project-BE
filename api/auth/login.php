@@ -1,27 +1,27 @@
 <?php
-include  "config/db.php";
+header("Content-Type: application/json");
+include('../../config/db.php');
 
-// get data
-$email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-$password = $_POST['password'];
+$data = json_decode(file_get_contents("php://input"), true);
+$email = $data['email'];
+$password = md5($data['password']);
 
-// validate
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(["message" => "Invalid email"]);
-    exit;
-}
+$query = mysqli_query($conn, "SELECT * FROM users WHERE email='$email' AND password='$password'");
 
-// check user
-$sql = "SELECT * FROM users WHERE email = '$email'";
-$result = mysqli_query($conn, $sql);
-$user = mysqli_fetch_assoc($result);
-
-// authorize
-if ($user && password_verify($password, $user['password'])) {
+if (mysqli_num_rows($query) > 0) {
+    $user = mysqli_fetch_assoc($query);
+    
+    // Create simple token
+    $token = base64_encode($user['id'] . ':' . time());
+    
     echo json_encode([
+        "status" => true,
         "message" => "Login successful",
-        "user_id" => $user['id']
+        "token" => $token,
+        "userId" => $user['id'],
+        "name" => $user['name']
     ]);
 } else {
-    echo json_encode(["message" => "Unauthorized access"]);
+    echo json_encode(["status" => false, "message" => "Invalid credentials"]);
 }
+?>
