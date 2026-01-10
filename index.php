@@ -18,6 +18,11 @@ echo json_encode([
         "Budget" => [
             ["method" => "POST", "path" => "/api/budget/setBudget.php", "auth_required" => true],
             ["method" => "GET", "path" => "/api/budget/getBudget.php", "auth_required" => true]
+        ],
+        "Analytics" => [
+            ["method" => "GET", "path" => "/api/analytics/getExpensesByCategory.php", "auth_required" => true],
+            ["method" => "GET", "path" => "/api/analytics/getExpensesByDate.php", "auth_required" => true],
+            ["method" => "GET", "path" => "/api/analytics/getMonthlySummary.php", "auth_required" => true]
         ]
     ]
 ]);
