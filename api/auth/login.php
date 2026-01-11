@@ -1,27 +1,35 @@
 <?php
-header("Content-Type: application/json");
-include('../../config/db.php');
+require_once '../../config/db.php';
+require_once '../../models/User.php';
+require_once '../../utils/auth.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
-$email = $data['email'];
-$password = md5($data['password']);
+$email = $data['email'] ?? '';
+$password = $data['password'] ?? '';
 
-$query = mysqli_query($conn, "SELECT * FROM users WHERE email='$email' AND password='$password'");
+if(empty($email) || empty($password)) {
+    echo json_encode(["success" => false, "message" => "Email and password required"]);
+    exit;
+}
 
-if (mysqli_num_rows($query) > 0) {
-    $user = mysqli_fetch_assoc($query);
-    
-    // Create simple token
-    $token = base64_encode($user['id'] . ':' . time());
+$userModel = new User($conn);
+$result = $userModel->login($email, $password);
+
+if ($result['success']) {
+    $user = $result['user'];
+    $token = generateToken($user['id']);
     
     echo json_encode([
-        "status" => true,
+        "success" => true,
         "message" => "Login successful",
         "token" => $token,
-        "userId" => $user['id'],
-        "name" => $user['name']
+        "user" => [
+            "id" => $user['id'],
+            "name" => $user['first_name'] . ' ' . $user['last_name'],
+            "email" => $user['email']
+        ]
     ]);
 } else {
-    echo json_encode(["status" => false, "message" => "Invalid credentials"]);
+    echo json_encode($result);
 }
 ?>

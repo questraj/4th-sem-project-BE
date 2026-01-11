@@ -1,19 +1,30 @@
 <?php
-header("Content-Type: application/json");
-include('../../config/db.php');
+require_once '../../config/db.php';
+require_once '../../utils/auth.php';
 
-$userId = $_GET['userId'];
+$userId = authenticate();
+
 $month = $_GET['month'] ?? date('m');
 $year = $_GET['year'] ?? date('Y');
 
-// Total expenses
-$totalQuery = mysqli_query($conn, "SELECT SUM(amount) as total FROM expenses WHERE user_id='$userId' AND MONTH(date)='$month' AND YEAR(date)='$year'");
-$total = mysqli_fetch_assoc($totalQuery)['total'] ?? 0;
+$stmtTotal = $conn->prepare("SELECT SUM(amount) as total FROM expenses WHERE user_id=? AND MONTH(date)=? AND YEAR(date)=?");
+$stmtTotal->bind_param("isi", $userId, $month, $year);
+$stmtTotal->execute();
+$total = (float)$stmtTotal->get_result()->fetch_assoc()['total'] ?? 0;
 
-// By category
-$categoryQuery = mysqli_query($conn, "SELECT category, SUM(amount) as total FROM expenses WHERE user_id='$userId' AND MONTH(date)='$month' AND YEAR(date)='$year' GROUP BY category");
+$stmtCat = $conn->prepare("
+    SELECT c.category_name as category, SUM(e.amount) as total 
+    FROM expenses e
+    JOIN categories c ON e.category_id = c.id
+    WHERE e.user_id=? AND MONTH(e.date)=? AND YEAR(e.date)=? 
+    GROUP BY c.category_name
+");
+$stmtCat->bind_param("isi", $userId, $month, $year);
+$stmtCat->execute();
+$resultCat = $stmtCat->get_result();
+
 $categories = [];
-while ($row = mysqli_fetch_assoc($categoryQuery)) {
+while ($row = $resultCat->fetch_assoc()) {
     $categories[] = $row;
 }
 
@@ -22,4 +33,4 @@ echo json_encode([
     "totalExpense" => $total,
     "byCategory" => $categories
 ]);
-//dashboard overviw//
+?>

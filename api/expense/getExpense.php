@@ -1,16 +1,14 @@
 <?php
-session_start();
+// api/expense/getExpense.php
 require_once '../../config/db.php';
 require_once '../../models/Expense.php';
 require_once '../../utils/response.php';
+require_once '../../utils/auth.php';
 
-// Authorization
-if (!isset($_SESSION['user_id'])) {
-    sendResponse(false, "Unauthorized access");
-}
+$userId = authenticate(); // Validate Token
 
 $expense = new Expense($conn);
-$data = $expense->getAll($_SESSION['user_id']);
+$data = $expense->getAll($userId);
 
 sendResponse(true, "Expenses fetched successfully", $data);
 ?>

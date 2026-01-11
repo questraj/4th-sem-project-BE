@@ -1,18 +1,19 @@
 <?php
 require_once '../../config/db.php';
-require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Secure Prepared Statement
+// Fetch last 5 expenses
 $stmt = $conn->prepare("
-    SELECT c.category_name as category, SUM(e.amount) as total 
+    SELECT e.id, e.amount, e.date, e.description, c.category_name 
     FROM expenses e
     JOIN categories c ON e.category_id = c.id
     WHERE e.user_id = ? 
-    GROUP BY c.category_name
+    ORDER BY e.date DESC, e.id DESC 
+    LIMIT 5
 ");
+
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();

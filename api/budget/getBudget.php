@@ -1,18 +1,15 @@
 <?php
-session_start();
 require_once '../../config/db.php';
 require_once '../../models/Budget.php';
 require_once '../../utils/response.php';
+require_once '../../utils/auth.php';
 
-// Authorization
-if (!isset($_SESSION['user_id'])) {
-    sendResponse(false, "Unauthorized access");
-}
+$userId = authenticate();
 
 $name = isset($_GET['name']) ? filter_var($_GET['name'], FILTER_SANITIZE_STRING) : "Monthly Budget";
 
 $budget = new Budget($conn);
-$data = $budget->getBudget($_SESSION['user_id'], $name);
+$data = $budget->getBudget($userId, $name);
 
 if ($data) {
     sendResponse(true, "Budget fetched successfully", $data);

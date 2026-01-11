@@ -74,6 +74,18 @@ CREATE TABLE expenses (
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
+-- Category Budget Table
+CREATE TABLE category_budgets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_category (user_id, category_id)
+);
+
 ````
 
 Step 5: Run this in terminal to start server

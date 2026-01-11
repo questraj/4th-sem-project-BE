@@ -1,25 +1,23 @@
 <?php
-session_start();
 require_once '../../config/db.php';
 require_once '../../models/Budget.php';
 require_once '../../utils/response.php';
+require_once '../../utils/auth.php';
 
-// Authorization
-if (!isset($_SESSION['user_id'])) {
-    sendResponse(false, "Unauthorized access");
-}
+$userId = authenticate();
 
-// Get POST data & sanitize
-$amount = filter_var($_POST['amount'], FILTER_VALIDATE_FLOAT);
-$name = isset($_POST['name']) ? filter_var($_POST['name'], FILTER_SANITIZE_STRING) : "Monthly Budget";
+$data = json_decode(file_get_contents("php://input"), true);
+if (!$data) $data = $_POST;
 
-// Validate
+$amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
+$name = isset($data['name']) ? filter_var($data['name'], FILTER_SANITIZE_STRING) : "Monthly Budget";
+
 if ($amount === false || $amount < 0) {
     sendResponse(false, "Invalid budget amount");
 }
 
 $budget = new Budget($conn);
-$result = $budget->setBudget($_SESSION['user_id'], $amount, $name);
+$result = $budget->setBudget($userId, $amount, $name);
 
 if ($result) {
     sendResponse(true, "Budget set successfully");
