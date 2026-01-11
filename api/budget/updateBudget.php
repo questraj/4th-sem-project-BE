@@ -1,39 +1,39 @@
 <?php
-session_start();
 require_once '../../config/db.php';
 require_once '../../models/Budget.php';
 require_once '../../utils/response.php';
+require_once '../../utils/auth.php';
 
-// Authorization check
-if (!isset($_SESSION['user_id'])) {
-    sendResponse(false, "Unauthorized access");
-}
+// 1. Authenticate
+$userId = authenticate();
 
-// Get POST data & sanitize
-$budget_id = filter_var($_POST['budget_id'], FILTER_VALIDATE_INT);
-$amount = filter_var($_POST['amount'], FILTER_VALIDATE_FLOAT);
-$name = isset($_POST['name']) ? filter_var($_POST['name'], FILTER_SANITIZE_STRING) : null;
+// 2. Get Data
+$data = json_decode(file_get_contents("php://input"), true);
+if (!$data) $data = $_POST;
 
-// Validate input
+$budget_id = filter_var($data['budget_id'] ?? 0, FILTER_VALIDATE_INT);
+$amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
+$name = isset($data['name']) ? filter_var($data['name'], FILTER_SANITIZE_STRING) : null;
+
+// 3. Validate
 if (!$budget_id || $amount === false || $amount < 0) {
     sendResponse(false, "Invalid input");
 }
 
-// Fetch budget first to ensure it belongs to the user
+// 4. Security Check: Does this budget belong to this user?
 $stmt = $conn->prepare("SELECT * FROM budgets WHERE id=? AND user_id=?");
-$stmt->bind_param("ii", $budget_id, $_SESSION['user_id']);
+$stmt->bind_param("ii", $budget_id, $userId);
 $stmt->execute();
-$result = $stmt->get_result();
-$existing = $result->fetch_assoc();
+$existing = $stmt->get_result()->fetch_assoc();
 
 if (!$existing) {
-    sendResponse(false, "Budget not found");
+    sendResponse(false, "Budget not found or unauthorized");
 }
 
-// Update budget
+// 5. Update
 $updateStmt = $conn->prepare("UPDATE budgets SET amount=?, name=? WHERE id=? AND user_id=?");
 $updateName = $name ?? $existing['name'];
-$updateStmt->bind_param("dsii", $amount, $updateName, $budget_id, $_SESSION['user_id']);
+$updateStmt->bind_param("dsii", $amount, $updateName, $budget_id, $userId);
 
 if ($updateStmt->execute()) {
     sendResponse(true, "Budget updated successfully");

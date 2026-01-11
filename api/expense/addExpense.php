@@ -1,27 +1,26 @@
 <?php
-session_start();
 require_once '../../config/db.php';
 require_once '../../models/Expense.php';
 require_once '../../utils/response.php';
+require_once '../../utils/auth.php';
 
-// Authorization
-if (!isset($_SESSION['user_id'])) {
-    sendResponse(false, "Unauthorized access");
-}
+$userId = authenticate();
 
-// Get POST data & sanitize
-$category_id = filter_var($_POST['category_id'], FILTER_VALIDATE_INT);
-$amount = filter_var($_POST['amount'], FILTER_VALIDATE_FLOAT);
-$date = filter_var($_POST['date'], FILTER_SANITIZE_STRING);
-$description = filter_var($_POST['description'], FILTER_SANITIZE_STRING);
+$data = json_decode(file_get_contents("php://input"), true);
+if (!$data) $data = $_POST;
 
-// Validate
+$category_id = filter_var($data['category_id'] ?? 0, FILTER_VALIDATE_INT);
+$amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
+$date = filter_var($data['date'] ?? '', FILTER_SANITIZE_STRING);
+$description = filter_var($data['description'] ?? '', FILTER_SANITIZE_STRING);
+
 if (!$category_id || !$amount || !$date) {
-    sendResponse(false, "Invalid input");
+    sendResponse(false, "Invalid input. Category, Amount, and Date are required.");
 }
 
 $expense = new Expense($conn);
-$result = $expense->add($_SESSION['user_id'], $category_id, $amount, $date, $description);
+// Assuming your Expense Model's add method is: add($user_id, $category_id, $amount, $date, $description)
+$result = $expense->add($userId, $category_id, $amount, $date, $description);
 
 if ($result) {
     sendResponse(true, "Expense added successfully");

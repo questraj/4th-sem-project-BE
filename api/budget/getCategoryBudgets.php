@@ -5,22 +5,21 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Secure Prepared Statement
 $stmt = $conn->prepare("
-    SELECT c.category_name as category, SUM(e.amount) as total 
-    FROM expenses e
-    JOIN categories c ON e.category_id = c.id
-    WHERE e.user_id = ? 
-    GROUP BY c.category_name
+    SELECT c.category_name, cb.category_id, cb.amount 
+    FROM category_budgets cb
+    JOIN categories c ON cb.category_id = c.id
+    WHERE cb.user_id = ?
 ");
+
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 
 $data = [];
 while ($row = $result->fetch_assoc()) {
-    $data[] = $row;
+    $data[$row['category_name']] = (float)$row['amount']; // Key-Value pair for easy lookup
 }
 
-echo json_encode(["status" => true, "data" => $data]);
+sendResponse(true, "Fetched successfully", $data);
 ?>
