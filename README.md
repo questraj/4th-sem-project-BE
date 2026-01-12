@@ -31,50 +31,50 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- Users Table
+---- 1. Create and Use Database
+CREATE DATABASE IF NOT EXISTS expense_tracker;
+USE expense_tracker;
+
+-- 2. Users Table
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100),
+    first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
-    last_name VARCHAR(100),
+    last_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Categories Table
+-- 3. Categories Table (Global & Custom)
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    category_name VARCHAR(100) NOT NULL
+    user_id INT DEFAULT NULL, -- NULL = Global Category, ID = Custom User Category
+    category_name VARCHAR(100) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-INSERT INTO categories (category_name) VALUES 
-('Food'), ('Transport'), ('Utilities'), ('Entertainment'), ('Health');
+-- 4. Sub-Categories Table (Global & Custom)
+CREATE TABLE sub_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT DEFAULT NULL, -- NULL = Global Sub-cat
+    category_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
--- Budgets Table
+-- 5. Budgets Table (Total Limits: Weekly, Monthly, Yearly)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    name VARCHAR(100) DEFAULT 'Monthly Budget',
+    type VARCHAR(20) DEFAULT 'Monthly', -- Weekly, Monthly, Yearly
     amount DECIMAL(10, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Expenses Table
-CREATE TABLE expenses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    category_id INT NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    date DATE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
-);
-
--- Category Budget Table
+-- 6. Category Budgets (Limit per specific category)
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -85,6 +85,52 @@ CREATE TABLE category_budgets (
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
+
+-- 7. Expenses Table (Transactions)
+CREATE TABLE expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    sub_category_id INT DEFAULT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+);
+
+-- =============================================
+-- SEED DATA (DEFAULT CATEGORIES & SUB-CATEGORIES)
+-- =============================================
+
+-- Insert Default Categories
+INSERT INTO categories (id, category_name) VALUES 
+(1, 'Food'), 
+(2, 'Transport'), 
+(3, 'Utilities'), 
+(4, 'Entertainment'), 
+(5, 'Health'),
+(6, 'Shopping'),
+(7, 'Education');
+
+-- Insert Default Sub-Categories
+INSERT INTO sub_categories (category_id, name) VALUES 
+-- Food (1)
+(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
+-- Transport (2)
+(2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
+-- Utilities (3)
+(3, 'Electricity'), (3, 'Water'), (3, 'Internet'), (3, 'Phone Bill'),
+-- Entertainment (4)
+(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'), (4, 'Events'),
+-- Health (5)
+(5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
+-- Shopping (6)
+(6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
+-- Education (7)
+(7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
 
 ````
 
