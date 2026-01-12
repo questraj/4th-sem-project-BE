@@ -1,0 +1,36 @@
+<?php
+require_once '../../config/db.php';
+require_once '../../utils/auth.php';
+
+$userId = authenticate();
+
+// Join expenses with categories and sub-categories
+$sql = "
+    SELECT 
+        e.id, 
+        e.amount, 
+        e.date, 
+        e.description, 
+        e.category_id,
+        c.category_name, 
+        e.sub_category_id,
+        s.name as sub_category_name
+    FROM expenses e
+    JOIN categories c ON e.category_id = c.id
+    LEFT JOIN sub_categories s ON e.sub_category_id = s.id
+    WHERE e.user_id = ? 
+    ORDER BY e.date DESC, e.id DESC
+";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$data = [];
+while ($row = $result->fetch_assoc()) {
+    $data[] = $row;
+}
+
+echo json_encode(["status" => true, "data" => $data]);
+?>

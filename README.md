@@ -31,8 +31,9 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
----- 1. Create and Use Database
-CREATE DATABASE IF NOT EXISTS expense_tracker;
+-- 1. Reset Database
+DROP DATABASE IF EXISTS expense_tracker;
+CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
 -- 2. Users Table
@@ -47,9 +48,10 @@ CREATE TABLE users (
 );
 
 -- 3. Categories Table (Global & Custom)
+-- user_id is NULL for default categories, set for custom ones
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = Global Category, ID = Custom User Category
+    user_id INT DEFAULT NULL, 
     category_name VARCHAR(100) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -57,7 +59,7 @@ CREATE TABLE categories (
 -- 4. Sub-Categories Table (Global & Custom)
 CREATE TABLE sub_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = Global Sub-cat
+    user_id INT DEFAULT NULL,
     category_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
@@ -101,11 +103,19 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
+-- 8. Expense Bills Table (For Multiple Images)
+CREATE TABLE expense_bills (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    expense_id INT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE
+);
+
 -- =============================================
--- SEED DATA (DEFAULT CATEGORIES & SUB-CATEGORIES)
+-- SEED DATA (DEFAULT CATEGORIES)
 -- =============================================
 
--- Insert Default Categories
 INSERT INTO categories (id, category_name) VALUES 
 (1, 'Food'), 
 (2, 'Transport'), 
@@ -115,7 +125,10 @@ INSERT INTO categories (id, category_name) VALUES
 (6, 'Shopping'),
 (7, 'Education');
 
--- Insert Default Sub-Categories
+-- =============================================
+-- SEED DATA (DEFAULT SUB-CATEGORIES)
+-- =============================================
+
 INSERT INTO sub_categories (category_id, name) VALUES 
 -- Food (1)
 (1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
@@ -131,8 +144,6 @@ INSERT INTO sub_categories (category_id, name) VALUES
 (6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
 -- Education (7)
 (7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
-
-````
 
 Step 5: Run this in terminal to start server
 
