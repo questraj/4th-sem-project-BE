@@ -7,17 +7,18 @@ require_once '../../utils/auth.php';
 $userId = authenticate();
 
 $data = json_decode(file_get_contents("php://input"), true);
-if (!$data) $data = $_POST;
 
 $amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
-$name = isset($data['name']) ? filter_var($data['name'], FILTER_SANITIZE_STRING) : "Monthly Budget";
+// Get the type (Weekly, Monthly, Yearly) - Default to Monthly
+$type = filter_var($data['type'] ?? 'Monthly', FILTER_SANITIZE_STRING);
 
 if ($amount === false || $amount < 0) {
     sendResponse(false, "Invalid budget amount");
 }
 
 $budget = new Budget($conn);
-$result = $budget->setBudget($userId, $amount, $name);
+// Pass the type to the model
+$result = $budget->setBudget($userId, $amount, $type);
 
 if ($result) {
     sendResponse(true, "Budget set successfully");

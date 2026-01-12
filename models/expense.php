@@ -9,12 +9,16 @@ class Expense {
     }
 
     // Add expense
-    public function add($user_id, $category_id, $amount, $date, $description) {
+
+// models/Expense.php
+
+    public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id = NULL) {
         $stmt = $this->conn->prepare("
-            INSERT INTO expenses (user_id, category_id, amount, date, description) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description) 
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("iidss", $user_id, $category_id, $amount, $date, $description);
+        // 'd' for double (amount), 'i' for integers, 's' for strings
+        $stmt->bind_param("iiidss", $user_id, $category_id, $sub_category_id, $amount, $date, $description);
         return $stmt->execute();
     }
 

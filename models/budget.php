@@ -8,34 +8,33 @@ class Budget {
         $this->conn = $db;
     }
 
-    // Set or update budget for a user
-    public function setBudget($user_id, $amount, $name = "Monthly Budget") {
+    // Set or update budget with TYPE
+    public function setBudget($user_id, $amount, $type = "Monthly") {
         // Check if budget exists
-        $stmt = $this->conn->prepare("SELECT id FROM budgets WHERE user_id = ? AND name = ?");
-        $stmt->bind_param("is", $user_id, $name);
+        $stmt = $this->conn->prepare("SELECT id FROM budgets WHERE user_id = ?");
+        $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            // Update existing budget
-            $stmt = $this->conn->prepare("UPDATE budgets SET amount = ?, created_at = NOW() WHERE user_id = ? AND name = ?");
-            $stmt->bind_param("dis", $amount, $user_id, $name);
+            // Update existing
+            $stmt = $this->conn->prepare("UPDATE budgets SET amount = ?, type = ?, created_at = NOW() WHERE user_id = ?");
+            $stmt->bind_param("dsi", $amount, $type, $user_id);
         } else {
-            // Insert new budget
-            $stmt = $this->conn->prepare("INSERT INTO budgets (user_id, name, amount) VALUES (?, ?, ?)");
-            $stmt->bind_param("isd", $user_id, $name, $amount);
+            // Insert new
+            $stmt = $this->conn->prepare("INSERT INTO budgets (user_id, amount, type) VALUES (?, ?, ?)");
+            $stmt->bind_param("ids", $user_id, $amount, $type);
         }
 
         return $stmt->execute();
     }
 
-    // Get budget for a user
-    public function getBudget($user_id, $name = "Monthly Budget") {
-        $stmt = $this->conn->prepare("SELECT * FROM budgets WHERE user_id = ? AND name = ?");
-        $stmt->bind_param("is", $user_id, $name);
+    public function getBudget($user_id) {
+        // We removed the 'name' filter to simplify fetching the main active budget
+        $stmt = $this->conn->prepare("SELECT * FROM budgets WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+        $stmt->bind_param("i", $user_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
 }
 ?>
