@@ -12,13 +12,13 @@ class Expense {
 
 // models/Expense.php
 
-    public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id = NULL) {
+     public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id = NULL, $source = "Cash") {
         $stmt = $this->conn->prepare("
-            INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description, source) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
-        // 'd' for double (amount), 'i' for integers, 's' for strings
-        $stmt->bind_param("iiidss", $user_id, $category_id, $sub_category_id, $amount, $date, $description);
+        // Added 's' at the end for the source string
+        $stmt->bind_param("iiidsss", $user_id, $category_id, $sub_category_id, $amount, $date, $description, $source);
         return $stmt->execute();
     }
 

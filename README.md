@@ -32,6 +32,7 @@ and create a new database called expense_tracker and in the SQL section paste th
 
 ````bash
 -- 1. Reset Database
+-- 1. Reset Database (Start Fresh)
 DROP DATABASE IF EXISTS expense_tracker;
 CREATE DATABASE expense_tracker;
 USE expense_tracker;
@@ -47,15 +48,17 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Categories Table
+-- 3. Categories Table (Global & Custom)
+-- user_id is NULL for system categories, set for custom user categories
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL, 
     category_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 4. Sub-Categories Table
+-- 4. Sub-Categories Table (Global & Custom)
 CREATE TABLE sub_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL,
@@ -65,7 +68,7 @@ CREATE TABLE sub_categories (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 5. Budgets Table (UPDATED FOR MULTIPLE TYPES)
+-- 5. Budgets Table (Total Limits: Weekly, Monthly, Yearly)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -73,12 +76,11 @@ CREATE TABLE budgets (
     amount DECIMAL(10, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    -- THIS LINE IS THE MAGIC FIX:
-    -- It ensures User #1 can have 1 Monthly, 1 Weekly, and 1 Yearly budget stored safely.
+    -- Ensures a user can have 1 Monthly, 1 Weekly, and 1 Yearly budget at the same time
     UNIQUE KEY unique_user_budget_type (user_id, type)
 );
 
--- 6. Category Budgets
+-- 6. Category Budgets (Limit per specific category)
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -90,7 +92,7 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- 7. Expenses Table
+-- 7. Expenses Table (Transactions)
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -99,13 +101,14 @@ CREATE TABLE expenses (
     amount DECIMAL(10, 2) NOT NULL,
     date DATE NOT NULL,
     description TEXT,
+    source VARCHAR(50) DEFAULT 'Cash', -- Cash, Online, Cheque
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id),
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- 8. Expense Bills Table
+-- 8. Expense Bills Table (For Multiple Images)
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
@@ -115,21 +118,37 @@ CREATE TABLE expense_bills (
 );
 
 -- =============================================
--- SEED DATA
+-- SEED DATA (DEFAULT SYSTEM CATEGORIES)
 -- =============================================
 
 INSERT INTO categories (id, category_name) VALUES 
-(1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
-(5, 'Health'), (6, 'Shopping'), (7, 'Education');
+(1, 'Food'), 
+(2, 'Transport'), 
+(3, 'Utilities'), 
+(4, 'Entertainment'), 
+(5, 'Health'),
+(6, 'Shopping'),
+(7, 'Education');
+
+-- =============================================
+-- SEED DATA (DEFAULT SYSTEM SUB-CATEGORIES)
+-- =============================================
 
 INSERT INTO sub_categories (category_id, name) VALUES 
-(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'),
-(2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'),
-(3, 'Electricity'), (3, 'Water'), (3, 'Internet'),
-(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'),
+-- Food (1)
+(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
+-- Transport (2)
+(2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
+-- Utilities (3)
+(3, 'Electricity'), (3, 'Water'), (3, 'Internet'), (3, 'Phone Bill'),
+-- Entertainment (4)
+(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'), (4, 'Events'),
+-- Health (5)
 (5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
-(6, 'Clothes'), (6, 'Electronics'),
-(7, 'Tuition Fee'), (7, 'Books');
+-- Shopping (6)
+(6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
+-- Education (7)
+(7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
 
 Step 5: Run this in terminal to start server
 
