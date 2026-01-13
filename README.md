@@ -31,13 +31,12 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- 1. Reset Database
 -- 1. Reset Database (Start Fresh)
 DROP DATABASE IF EXISTS expense_tracker;
 CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
--- 2. Users Table
+-- 2. Users Table (Updated with Bank Details)
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -45,14 +44,15 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
+    bank_name VARCHAR(100) DEFAULT NULL,       -- NEW FIELD
+    bank_account_no VARCHAR(50) DEFAULT NULL,  -- NEW FIELD
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 3. Categories Table (Global & Custom)
--- user_id is NULL for system categories, set for custom user categories
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, 
+    user_id INT DEFAULT NULL, -- NULL = System Category, ID = User Custom Category
     category_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -76,7 +76,7 @@ CREATE TABLE budgets (
     amount DECIMAL(10, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    -- Ensures a user can have 1 Monthly, 1 Weekly, and 1 Yearly budget at the same time
+    -- Constraint: User can have 1 Monthly, 1 Weekly, and 1 Yearly budget simultaneously
     UNIQUE KEY unique_user_budget_type (user_id, type)
 );
 
