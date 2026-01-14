@@ -149,6 +149,7 @@ INSERT INTO sub_categories (category_id, name) VALUES
 (6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
 -- Education (7)
 (7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
+````
 
 Step 5: Run this in terminal to start server
 
