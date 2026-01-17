@@ -18,7 +18,7 @@ $result = $stmt->get_result();
 
 $data = [];
 while ($row = $result->fetch_assoc()) {
-    $data[$row['category_name']] = (float)$row['amount']; // Key-Value pair for easy lookup
+    $data[$row['category_name']] = (float)$row['amount'];
 }
 
 sendResponse(true, "Fetched successfully", $data);

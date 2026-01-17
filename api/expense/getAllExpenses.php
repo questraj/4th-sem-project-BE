@@ -4,7 +4,6 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// 1. Check if filter dates are provided
 $startDate = $_GET['start_date'] ?? null;
 $endDate = $_GET['end_date'] ?? null;
 
@@ -24,21 +23,17 @@ $sql = "
     WHERE e.user_id = ? 
 ";
 
-// 2. Add Date Filter Logic
 if ($startDate && $endDate) {
     $sql .= " AND e.date BETWEEN ? AND ? ";
 }
 
 $sql .= " ORDER BY e.date DESC, e.id DESC";
 
-// 3. Prepare Statement based on logic
 $stmt = $conn->prepare($sql);
 
 if ($startDate && $endDate) {
-    // Bind UserID (int), StartDate (string), EndDate (string)
     $stmt->bind_param("iss", $userId, $startDate, $endDate);
 } else {
-    // Bind only UserID
     $stmt->bind_param("i", $userId);
 }
 

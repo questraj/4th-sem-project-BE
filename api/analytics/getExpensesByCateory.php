@@ -5,7 +5,6 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Secure Prepared Statement
 $stmt = $conn->prepare("
     SELECT c.category_name as category, SUM(e.amount) as total 
     FROM expenses e

@@ -20,6 +20,7 @@ $result = $category->addSubCategory($userId, $categoryId, $name);
 if ($result['success']) {
     sendResponse(true, "Sub-category added", ["id" => $result['id'], "name" => $name]);
 } else {
-    sendResponse(false, "Failed to add sub-category");
+    // Pass the specific error message
+    sendResponse(false, $result['message']);
 }
 ?>

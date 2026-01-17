@@ -8,9 +8,7 @@ class User {
         $this->conn = $db;
     }
 
-    // Updated register function with Bank Details
     public function register($email, $password, $first_name, $middle_name, $last_name, $bank_name = '', $bank_account_no = '') {
-        // Check if email exists
         $stmt = $this->conn->prepare("SELECT id FROM users WHERE email=?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -20,7 +18,6 @@ class User {
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
-        // Updated INSERT statement
         $stmt = $this->conn->prepare("
             INSERT INTO users (email, password, first_name, middle_name, last_name, bank_name, bank_account_no) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -33,7 +30,6 @@ class User {
         return ["success" => false, "message" => "Registration failed"];
     }
 
-    // ... (Keep login function as is) ...
     public function login($email, $password) {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE email=?");
         $stmt->bind_param("s", $email);

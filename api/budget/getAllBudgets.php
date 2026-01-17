@@ -5,7 +5,6 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Fetch all budgets for this user
 $stmt = $conn->prepare("SELECT id, type, amount, created_at FROM budgets WHERE user_id = ? ORDER BY created_at DESC");
 $stmt->bind_param("i", $userId);
 $stmt->execute();

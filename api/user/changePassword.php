@@ -13,7 +13,6 @@ if (empty($currentPass) || strlen($newPass) < 6) {
     sendResponse(false, "Invalid input. New password must be 6+ chars.");
 }
 
-// 1. Verify Old Password
 $stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
@@ -23,7 +22,6 @@ if (!password_verify($currentPass, $user['password'])) {
     sendResponse(false, "Current password is incorrect");
 }
 
-// 2. Update to New Password
 $newHash = password_hash($newPass, PASSWORD_DEFAULT);
 $update = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
 $update->bind_param("si", $newHash, $userId);

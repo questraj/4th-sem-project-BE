@@ -7,7 +7,6 @@ $userId = authenticate();
 $data = json_decode(file_get_contents("php://input"), true);
 $id = $data['id'] ?? 0;
 
-// Only delete if it belongs to the user
 $stmt = $conn->prepare("DELETE FROM categories WHERE id = ? AND user_id = ?");
 $stmt->bind_param("ii", $id, $userId);
 

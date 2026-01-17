@@ -6,13 +6,11 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Note: Using $_POST because frontend uses FormData (for images)
 $category_id = $_POST['category_id'] ?? 0;
 $sub_category_id = !empty($_POST['sub_category_id']) ? $_POST['sub_category_id'] : NULL;
 $amount = $_POST['amount'] ?? 0;
 $date = $_POST['date'] ?? '';
 $description = $_POST['description'] ?? '';
-// NEW: Get Source
 $source = $_POST['source'] ?? 'Cash';
 
 if (!$category_id || !$amount || !$date) {
@@ -20,13 +18,11 @@ if (!$category_id || !$amount || !$date) {
 }
 
 $expense = new Expense($conn);
-// Pass $source to the add function
 $result = $expense->add($userId, $category_id, $amount, $date, $description, $sub_category_id, $source);
 
 if ($result) {
     $expenseId = $conn->insert_id;
 
-    // Handle Image Uploads
     if (!empty($_FILES['bills']['name'][0])) {
         $uploadDir = '../../uploads/bills/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);

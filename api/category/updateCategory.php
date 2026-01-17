@@ -11,7 +11,6 @@ $name = trim($data['name'] ?? '');
 
 if (!$id || empty($name)) sendResponse(false, "Invalid input");
 
-// Only update if it belongs to the user
 $stmt = $conn->prepare("UPDATE categories SET category_name = ? WHERE id = ? AND user_id = ?");
 $stmt->bind_param("sii", $name, $id, $userId);
 

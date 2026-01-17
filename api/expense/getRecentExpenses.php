@@ -4,7 +4,6 @@ require_once '../../utils/auth.php';
 
 $userId = authenticate();
 
-// Fetch last 5 expenses
 $stmt = $conn->prepare("
     SELECT e.id, e.amount, e.date, e.description, c.category_name 
     FROM expenses e

@@ -4,10 +4,8 @@ require_once '../../models/Expense.php';
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
-// 1. Authenticate (Get User ID from Token)
 $userId = authenticate();
 
-// 2. Get Data (JSON or POST)
 $data = json_decode(file_get_contents("php://input"), true);
 if (!$data) $data = $_POST;
 
@@ -17,7 +15,6 @@ $amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
 $date = filter_var($data['date'] ?? '', FILTER_SANITIZE_STRING);
 $description = filter_var($data['description'] ?? '', FILTER_SANITIZE_STRING);
 
-// 3. Validate
 if (!$id || !$category_id || !$amount || !$date) {
     sendResponse(false, "Invalid input. ID, Category, Amount, and Date required.");
 }
