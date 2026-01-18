@@ -31,12 +31,12 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- 1. Reset Database (Start Fresh)
+-- -- 1. DROP AND RECREATE DATABASE
 DROP DATABASE IF EXISTS expense_tracker;
 CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
--- 2. Users Table (Updated with Bank Details)
+-- 2. USERS TABLE
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -44,21 +44,21 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
-    bank_name VARCHAR(100) DEFAULT NULL,       -- NEW FIELD
-    bank_account_no VARCHAR(50) DEFAULT NULL,  -- NEW FIELD
+    bank_name VARCHAR(100) DEFAULT NULL,
+    bank_account_no VARCHAR(50) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Categories Table (Global & Custom)
+-- 3. CATEGORIES TABLE (System & Custom)
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = System Category, ID = User Custom Category
+    user_id INT DEFAULT NULL, -- NULL = System Category (Locked), ID = User Custom Category
     category_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 4. Sub-Categories Table (Global & Custom)
+-- 4. SUB-CATEGORIES TABLE
 CREATE TABLE sub_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL,
@@ -68,7 +68,24 @@ CREATE TABLE sub_categories (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 5. Budgets Table (Total Limits: Weekly, Monthly, Yearly)
+-- 5. MONTHLY BUDGETS (Yearly Planner with Weekly Breakdown)
+-- This is the new table for your 12-box grid with W1-W4 editing
+CREATE TABLE monthly_budgets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    year INT NOT NULL,
+    month INT NOT NULL, -- 1 = January, 12 = December
+    amount DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Total Monthly Amount
+    week1 DECIMAL(10, 2) DEFAULT 0,
+    week2 DECIMAL(10, 2) DEFAULT 0,
+    week3 DECIMAL(10, 2) DEFAULT 0,
+    week4 DECIMAL(10, 2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_month_year (user_id, year, month)
+);
+
+-- 6. LEGACY BUDGETS TABLE (Optional: Kept for "Set Budget" generic modal compatibility)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -76,11 +93,10 @@ CREATE TABLE budgets (
     amount DECIMAL(10, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    -- Constraint: User can have 1 Monthly, 1 Weekly, and 1 Yearly budget simultaneously
     UNIQUE KEY unique_user_budget_type (user_id, type)
 );
 
--- 6. Category Budgets (Limit per specific category)
+-- 7. CATEGORY BUDGETS (Limits per category)
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -92,7 +108,7 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- 7. Expenses Table (Transactions)
+-- 8. EXPENSES TABLE (Transactions)
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -108,13 +124,25 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- 8. Expense Bills Table (For Multiple Images)
+-- 9. EXPENSE BILLS (Images)
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE
+);
+
+-- 10. INCOMES TABLE (New Module)
+CREATE TABLE incomes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    source VARCHAR(100) NOT NULL, -- e.g. Salary, Freelance
+    amount DECIMAL(10, 2) NOT NULL,
+    date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- =============================================

@@ -81,12 +81,66 @@ class Budget {
             return ["success" => false, "message" => "Database error occurred"];
         }
     }
+          public function setMonthlyAmount($user_id, $year, $month, $w1, $w2, $w3, $w4) {
+        // Calculate Total automatically
+        $totalAmount = $w1 + $w2 + $w3 + $w4;
+
+        $stmt = $this->conn->prepare("
+            INSERT INTO monthly_budgets (user_id, year, month, amount, week1, week2, week3, week4) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+            ON DUPLICATE KEY UPDATE 
+                amount = VALUES(amount),
+                week1 = VALUES(week1),
+                week2 = VALUES(week2),
+                week3 = VALUES(week3),
+                week4 = VALUES(week4)
+        ");
+        $stmt->bind_param("iiiddddd", $user_id, $year, $month, $totalAmount, $w1, $w2, $w3, $w4);
+        
+        if ($stmt->execute()) {
+            return ["success" => true, "message" => "Budget updated"];
+        }
+        return ["success" => false, "message" => "Database error"];
+    }
 
     public function getBudget($user_id, $type) {
         $stmt = $this->conn->prepare("SELECT * FROM budgets WHERE user_id = ? AND type = ? ORDER BY id DESC LIMIT 1");
         $stmt->bind_param("is", $user_id, $type);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc();
+    }
+     public function getYearlyBreakdown($user_id, $year) {
+        $stmt = $this->conn->prepare("SELECT month, amount, week1, week2, week3, week4 FROM monthly_budgets WHERE user_id = ? AND year = ?");
+        $stmt->bind_param("ii", $user_id, $year);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $data = [];
+        while($row = $result->fetch_assoc()) {
+            $data[$row['month']] = [
+                "amount" => (float)$row['amount'],
+                "week1" => (float)$row['week1'],
+                "week2" => (float)$row['week2'],
+                "week3" => (float)$row['week3'],
+                "week4" => (float)$row['week4'],
+            ];
+        }
+        
+        // Fill missing months
+        $finalData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $existing = $data[$i] ?? null;
+            $finalData[] = [
+                "month" => $i,
+                "amount" => $existing ? $existing['amount'] : 0,
+                "week1" => $existing ? $existing['week1'] : 0,
+                "week2" => $existing ? $existing['week2'] : 0,
+                "week3" => $existing ? $existing['week3'] : 0,
+                "week4" => $existing ? $existing['week4'] : 0,
+            ];
+        }
+        
+        return $finalData;
     }
 }
 ?>
