@@ -31,12 +31,16 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- -- 1. DROP AND RECREATE DATABASE
+-- ---- =============================================
+-- 1. RESET DATABASE
+-- =============================================
 DROP DATABASE IF EXISTS expense_tracker;
 CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
+-- =============================================
 -- 2. USERS TABLE
+-- =============================================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -49,16 +53,17 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. CATEGORIES TABLE (System & Custom)
+-- =============================================
+-- 3. CATEGORIES & SUB-CATEGORIES
+-- =============================================
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = System Category (Locked), ID = User Custom Category
+    user_id INT DEFAULT NULL, -- NULL = System Category (Locked), ID = User Custom
     category_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 4. SUB-CATEGORIES TABLE
 CREATE TABLE sub_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT DEFAULT NULL,
@@ -68,35 +73,27 @@ CREATE TABLE sub_categories (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 5. MONTHLY BUDGETS (Yearly Planner with Weekly Breakdown)
--- This is the new table for your 12-box grid with W1-W4 editing
+-- =============================================
+-- 4. BUDGETING (EXPENSE PLANNING)
+-- =============================================
+
+-- A. The Yearly Planner (12 Boxes with W1-W4)
 CREATE TABLE monthly_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     year INT NOT NULL,
-    month INT NOT NULL, -- 1 = January, 12 = December
-    amount DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Total Monthly Amount
+    month INT NOT NULL, -- 1 = Jan, 12 = Dec
+    amount DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Total for the month
     week1 DECIMAL(10, 2) DEFAULT 0,
     week2 DECIMAL(10, 2) DEFAULT 0,
     week3 DECIMAL(10, 2) DEFAULT 0,
     week4 DECIMAL(10, 2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_month_year (user_id, year, month)
+    UNIQUE KEY unique_month_year_budget (user_id, year, month)
 );
 
--- 6. LEGACY BUDGETS TABLE (Optional: Kept for "Set Budget" generic modal compatibility)
-CREATE TABLE budgets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    type VARCHAR(20) DEFAULT 'Monthly', -- Weekly, Monthly, Yearly
-    amount DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_budget_type (user_id, type)
-);
-
--- 7. CATEGORY BUDGETS (Limits per category)
+-- B. Category Specific Limits (e.g. "Food Limit = 5000")
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -108,7 +105,52 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- 8. EXPENSES TABLE (Transactions)
+-- C. Legacy Budgets (Optional: For generic "Monthly/Weekly" settings)
+CREATE TABLE budgets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type VARCHAR(20) DEFAULT 'Monthly',
+    amount DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_budget_type (user_id, type)
+);
+
+-- =============================================
+-- 5. INCOME MODULE
+-- =============================================
+
+-- A. Actual Income Transactions (History)
+CREATE TABLE incomes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    source VARCHAR(100) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- B. Income Planner (12 Boxes with W1-W4)
+CREATE TABLE monthly_income_plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    year INT NOT NULL,
+    month INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    week1 DECIMAL(10, 2) DEFAULT 0,
+    week2 DECIMAL(10, 2) DEFAULT 0,
+    week3 DECIMAL(10, 2) DEFAULT 0,
+    week4 DECIMAL(10, 2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_month_year_income (user_id, year, month)
+);
+
+-- =============================================
+-- 6. EXPENSES (TRANSACTIONS)
+-- =============================================
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -124,7 +166,6 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- 9. EXPENSE BILLS (Images)
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
@@ -133,22 +174,9 @@ CREATE TABLE expense_bills (
     FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE
 );
 
--- 10. INCOMES TABLE (New Module)
-CREATE TABLE incomes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    source VARCHAR(100) NOT NULL, -- e.g. Salary, Freelance
-    amount DECIMAL(10, 2) NOT NULL,
-    date DATE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 -- =============================================
--- SEED DATA (DEFAULT SYSTEM CATEGORIES)
+-- 7. SEED DATA (DEFAULT CATEGORIES)
 -- =============================================
-
 INSERT INTO categories (id, category_name) VALUES 
 (1, 'Food'), 
 (2, 'Transport'), 
@@ -158,24 +186,20 @@ INSERT INTO categories (id, category_name) VALUES
 (6, 'Shopping'),
 (7, 'Education');
 
--- =============================================
--- SEED DATA (DEFAULT SYSTEM SUB-CATEGORIES)
--- =============================================
-
 INSERT INTO sub_categories (category_id, name) VALUES 
--- Food (1)
+-- Food
 (1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
--- Transport (2)
+-- Transport
 (2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
--- Utilities (3)
+-- Utilities
 (3, 'Electricity'), (3, 'Water'), (3, 'Internet'), (3, 'Phone Bill'),
--- Entertainment (4)
+-- Entertainment
 (4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'), (4, 'Events'),
--- Health (5)
+-- Health
 (5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
--- Shopping (6)
+-- Shopping
 (6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
--- Education (7)
+-- Education
 (7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
 ````
 
