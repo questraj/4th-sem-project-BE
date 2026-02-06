@@ -31,7 +31,7 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- ---- =============================================
+-- =============================================
 -- 1. RESET DATABASE
 -- =============================================
 DROP DATABASE IF EXISTS expense_tracker;
@@ -54,7 +54,19 @@ CREATE TABLE users (
 );
 
 -- =============================================
--- 3. CATEGORIES & SUB-CATEGORIES
+-- 3. LOGGING & AUDIT (NEW FEATURE)
+-- =============================================
+CREATE TABLE transaction_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL, -- e.g., 'ADDED_EXPENSE', 'SCHEDULED_EXPENSE'
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =============================================
+-- 4. CATEGORIES & SUB-CATEGORIES
 -- =============================================
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,16 +86,16 @@ CREATE TABLE sub_categories (
 );
 
 -- =============================================
--- 4. BUDGETING (EXPENSE PLANNING)
+-- 5. BUDGETING
 -- =============================================
 
--- A. The Yearly Planner (12 Boxes with W1-W4)
+-- A. The Yearly Planner (12 Boxes)
 CREATE TABLE monthly_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     year INT NOT NULL,
-    month INT NOT NULL, -- 1 = Jan, 12 = Dec
-    amount DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Total for the month
+    month INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
     week1 DECIMAL(10, 2) DEFAULT 0,
     week2 DECIMAL(10, 2) DEFAULT 0,
     week3 DECIMAL(10, 2) DEFAULT 0,
@@ -93,7 +105,7 @@ CREATE TABLE monthly_budgets (
     UNIQUE KEY unique_month_year_budget (user_id, year, month)
 );
 
--- B. Category Specific Limits (e.g. "Food Limit = 5000")
+-- B. Category Specific Limits
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -105,7 +117,7 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- C. Legacy Budgets (Optional: For generic "Monthly/Weekly" settings)
+-- C. Legacy Budgets
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -117,10 +129,8 @@ CREATE TABLE budgets (
 );
 
 -- =============================================
--- 5. INCOME MODULE
+-- 6. INCOME MODULE
 -- =============================================
-
--- A. Actual Income Transactions (History)
 CREATE TABLE incomes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -132,7 +142,6 @@ CREATE TABLE incomes (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- B. Income Planner (12 Boxes with W1-W4)
 CREATE TABLE monthly_income_plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -149,8 +158,27 @@ CREATE TABLE monthly_income_plans (
 );
 
 -- =============================================
--- 6. EXPENSES (TRANSACTIONS)
+-- 7. EXPENSES & FUTURE TRANSACTIONS
 -- =============================================
+
+-- A. Future/Scheduled Expenses (NEW FEATURE)
+CREATE TABLE future_expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    sub_category_id INT DEFAULT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    date DATE NOT NULL, -- Future Date
+    description TEXT,
+    source VARCHAR(50) DEFAULT 'Cash',
+    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PROCESSED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+);
+
+-- B. Actual Expenses (History)
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -159,13 +187,14 @@ CREATE TABLE expenses (
     amount DECIMAL(10, 2) NOT NULL,
     date DATE NOT NULL,
     description TEXT,
-    source VARCHAR(50) DEFAULT 'Cash', -- Cash, Online, Cheque
+    source VARCHAR(50) DEFAULT 'Cash',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id),
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
+-- C. Expense Bill Uploads
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
@@ -175,7 +204,7 @@ CREATE TABLE expense_bills (
 );
 
 -- =============================================
--- 7. SEED DATA (DEFAULT CATEGORIES)
+-- 8. SEED DATA
 -- =============================================
 INSERT INTO categories (id, category_name) VALUES 
 (1, 'Food'), 
@@ -187,21 +216,13 @@ INSERT INTO categories (id, category_name) VALUES
 (7, 'Education');
 
 INSERT INTO sub_categories (category_id, name) VALUES 
--- Food
 (1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
--- Transport
 (2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
--- Utilities
 (3, 'Electricity'), (3, 'Water'), (3, 'Internet'), (3, 'Phone Bill'),
--- Entertainment
 (4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'), (4, 'Events'),
--- Health
 (5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
--- Shopping
 (6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
--- Education
 (7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
-````
 
 Step 5: Run this in terminal to start server
 
