@@ -1,6 +1,7 @@
 <?php
 require_once '../../config/db.php';
 require_once '../../models/Expense.php';
+require_once '../../models/TransactionLog.php'; // Import Logger
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -23,6 +24,10 @@ $expense = new Expense($conn);
 $result = $expense->update($id, $userId, $category_id, $amount, $date, $description);
 
 if ($result) {
+    // LOGGING
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "UPDATED_EXPENSE", "Updated expense ID: $id (Amount: $amount)");
+
     sendResponse(true, "Expense updated successfully");
 } else {
     sendResponse(false, "Failed to update expense");

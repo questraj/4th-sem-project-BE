@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/db.php';
+require_once '../../models/TransactionLog.php'; // Import Logger
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -18,6 +19,10 @@ $stmt = $conn->prepare("UPDATE users SET first_name=?, middle_name=?, last_name=
 $stmt->bind_param("sssssi", $first, $mid, $last, $bank, $acc, $userId);
 
 if ($stmt->execute()) {
+    // LOGGING
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "UPDATED_PROFILE", "Updated personal info");
+
     sendResponse(true, "Profile updated successfully");
 } else {
     sendResponse(false, "Failed to update");

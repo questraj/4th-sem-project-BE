@@ -1,6 +1,7 @@
 <?php
 require_once '../../config/db.php';
 require_once '../../models/Expense.php';
+require_once '../../models/TransactionLog.php'; // Import Logger
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -19,6 +20,10 @@ $expense = new Expense($conn);
 $result = $expense->delete($id, $userId);
 
 if ($result) {
+    // LOGGING
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "DELETED_EXPENSE", "Deleted expense ID: $id");
+
     sendResponse(true, "Expense deleted successfully");
 } else {
     sendResponse(false, "Failed to delete expense");

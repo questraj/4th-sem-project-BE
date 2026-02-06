@@ -1,11 +1,11 @@
 <?php
 require_once '../../config/db.php';
 require_once '../../models/Budget.php';
+require_once '../../models/TransactionLog.php'; // Import Logger
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
 $userId = authenticate();
-
 $data = json_decode(file_get_contents("php://input"), true);
 
 $amount = filter_var($data['amount'] ?? 0, FILTER_VALIDATE_FLOAT);
@@ -19,6 +19,10 @@ $budget = new Budget($conn);
 $result = $budget->setBudget($userId, $amount, $type);
 
 if ($result['success']) {
+    // LOGGING
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "SET_BUDGET", "Set $type budget to $amount");
+
     sendResponse(true, $result['message']);
 } else {
     sendResponse(false, $result['message']);

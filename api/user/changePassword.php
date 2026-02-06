@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/db.php';
+require_once '../../models/TransactionLog.php'; // Import Logger
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -27,6 +28,10 @@ $update = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
 $update->bind_param("si", $newHash, $userId);
 
 if ($update->execute()) {
+    // LOGGING
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "SECURITY_UPDATE", "Password changed successfully");
+
     sendResponse(true, "Password changed successfully");
 } else {
     sendResponse(false, "Failed to change password");
