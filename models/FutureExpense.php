@@ -79,5 +79,18 @@ class FutureExpense {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
+        public function update($id, $user_id, $category_id, $amount, $date, $description) {
+        $stmt = $this->conn->prepare("
+            UPDATE future_expenses 
+            SET category_id = ?, amount = ?, date = ?, description = ? 
+            WHERE id = ? AND user_id = ? AND status = 'PENDING'
+        ");
+        $stmt->bind_param("idssii", $category_id, $amount, $date, $description, $id, $user_id);
+        
+        if ($stmt->execute()) {
+            return $stmt->affected_rows >= 0; // Return true even if no values changed but query ran
+        }
+        return false;
+    }
 }
 ?>
