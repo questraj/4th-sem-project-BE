@@ -66,5 +66,18 @@ class FutureExpense {
         }
         return false;
     }
+     // Get ALL pending expenses (for the Activity Page list)
+    public function getAllPending($user_id) {
+        $stmt = $this->conn->prepare("
+            SELECT f.*, c.category_name 
+            FROM future_expenses f
+            JOIN categories c ON f.category_id = c.id
+            WHERE f.user_id = ? AND f.status = 'PENDING'
+            ORDER BY f.date ASC
+        ");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
 }
 ?>
