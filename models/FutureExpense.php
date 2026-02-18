@@ -9,14 +9,16 @@ class FutureExpense {
     }
 
     // Add to future queue
-    public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id, $source) {
-        $stmt = $this->conn->prepare("
-            INSERT INTO future_expenses (user_id, category_id, sub_category_id, amount, date, description, source, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')
-        ");
-        $stmt->bind_param("iiidsss", $user_id, $category_id, $sub_category_id, $amount, $date, $description, $source);
-        return $stmt->execute();
-    }
+public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id, $source) {
+    $stmt = $this->conn->prepare("
+        INSERT INTO future_expenses (user_id, category_id, sub_category_id, amount, date, description, source, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')
+    ");
+    // Handle NULL for sub_category_id
+    $sub_cat = !empty($sub_category_id) ? $sub_category_id : NULL;
+    $stmt->bind_param("iiidsss", $user_id, $category_id, $sub_cat, $amount, $date, $description, $source);
+    return $stmt->execute();
+}
 
     // Get expenses that are due (Date is today or passed) and still PENDING
     public function getDueExpenses($user_id) {

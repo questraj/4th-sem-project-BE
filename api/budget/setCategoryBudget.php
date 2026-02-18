@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/db.php';
-require_once '../../models/TransactionLog.php'; // Import Logger
+require_once '../../models/TransactionLog.php'; 
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -14,7 +14,7 @@ if (!$categoryId || $amount <= 0) {
     sendResponse(false, "Invalid input");
 }
 
-// Check exists/update logic...
+// Logic to check if exists or insert...
 $check = $conn->prepare("SELECT id FROM category_budgets WHERE user_id = ? AND category_id = ?");
 $check->bind_param("ii", $userId, $categoryId);
 $check->execute();
@@ -31,7 +31,7 @@ if ($result->num_rows > 0) {
 if ($stmt->execute()) {
     // LOGGING
     $logger = new TransactionLog($conn);
-    $logger->log($userId, "SET_CAT_BUDGET", "Set category $categoryId limit to $amount");
+    $logger->log($userId, "SET_CATEGORY_LIMIT", "Set category ID $categoryId limit to NPR $amount");
 
     sendResponse(true, "Category budget set successfully");
 } else {

@@ -10,14 +10,14 @@ $id = $data['id'] ?? 0;
 
 if (!$id) sendResponse(false, "Invalid ID");
 
-// Only delete if it belongs to the user and is still PENDING
 $stmt = $conn->prepare("DELETE FROM future_expenses WHERE id = ? AND user_id = ? AND status = 'PENDING'");
 $stmt->bind_param("ii", $id, $userId);
 
-if ($stmt->execute() && $stmt->affected_rows > 0) {
+if ($stmt->execute()) {
     $logger = new TransactionLog($conn);
-    $logger->log($userId, "DELETED_SCHEDULE", "Deleted scheduled expense ID: $id");
-    sendResponse(true, "Scheduled expense removed.");
+    $logger->log($userId, "DELETED_SCHEDULE", "Cancelled a scheduled expense (ID: $id)");
+    sendResponse(true, "Scheduled expense cancelled");
 } else {
-    sendResponse(false, "Failed to delete or already processed.");
+    sendResponse(false, "Failed to delete");
 }
+?>

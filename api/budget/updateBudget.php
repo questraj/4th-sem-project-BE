@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/db.php';
-require_once '../../models/TransactionLog.php';
+require_once '../../models/TransactionLog.php'; // Add this
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -17,8 +17,10 @@ $stmt = $conn->prepare("UPDATE budgets SET amount = ?, type = ? WHERE id = ? AND
 $stmt->bind_param("dsii", $amount, $type, $id, $userId);
 
 if ($stmt->execute()) {
+    // LOGGING
     $logger = new TransactionLog($conn);
-    $logger->log($userId, "UPDATED_BUDGET", "Updated $type budget limit to NPR $amount");
+    $logger->log($userId, "UPDATED_BUDGET", "Changed $type budget limit to NPR $amount");
+
     sendResponse(true, "Budget updated successfully");
 } else {
     sendResponse(false, "Failed to update");
