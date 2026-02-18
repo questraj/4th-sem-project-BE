@@ -3,6 +3,7 @@ require_once '../../config/db.php';
 require_once '../../models/Budget.php';
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
+require_once '../../models/TransactionLog.php'; 
 
 $userId = authenticate();
 $data = json_decode(file_get_contents("php://input"), true);

@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/db.php';
+require_once '../../models/TransactionLog.php';
 require_once '../../utils/response.php';
 require_once '../../utils/auth.php';
 
@@ -15,8 +16,10 @@ $stmt = $conn->prepare("UPDATE categories SET category_name = ? WHERE id = ? AND
 $stmt->bind_param("sii", $name, $id, $userId);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
+    $logger = new TransactionLog($conn);
+    $logger->log($userId, "UPDATED_CATEGORY", "Renamed category to: $name");
     sendResponse(true, "Category updated");
 } else {
-    sendResponse(false, "Failed (You cannot edit system categories)");
+    sendResponse(false, "Failed (System categories cannot be edited)");
 }
 ?>

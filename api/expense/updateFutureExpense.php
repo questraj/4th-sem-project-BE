@@ -15,17 +15,14 @@ $date = $data['date'] ?? '';
 $description = $data['description'] ?? '';
 
 if (!$id || !$amount || !$date) {
-    sendResponse(false, "Invalid input");
+    sendResponse(false, "Required fields missing.");
 }
 
 $future = new FutureExpense($conn);
 if ($future->update($id, $userId, $category_id, $amount, $date, $description)) {
-    // Log it
     $logger = new TransactionLog($conn);
-    $logger->log($userId, "UPDATED_SCHEDULE", "Modified future expense ID: $id");
-    
-    sendResponse(true, "Scheduled expense updated");
+    $logger->log($userId, "UPDATED_SCHEDULE", "Modified scheduled expense ID: $id");
+    sendResponse(true, "Scheduled expense updated.");
 } else {
-    sendResponse(false, "Update failed");
+    sendResponse(false, "No changes made or update failed.");
 }
-?>

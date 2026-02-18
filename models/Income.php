@@ -1,54 +1,45 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 
-class IncomePlan {
+class Income {
     private $conn;
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    // Updated: Takes 'amount' directly. Weeks are optional/unused.
-    public function setMonthlyPlan($user_id, $year, $month, $amount, $w1=0, $w2=0, $w3=0, $w4=0) {
-        
-        $stmt = $this->conn->prepare("
-            INSERT INTO monthly_income_plans (user_id, year, month, amount, week1, week2, week3, week4) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
-            ON DUPLICATE KEY UPDATE 
-                amount = VALUES(amount),
-                week1 = VALUES(week1),
-                week2 = VALUES(week2),
-                week3 = VALUES(week3),
-                week4 = VALUES(week4)
-        ");
-        $stmt->bind_param("iiiddddd", $user_id, $year, $month, $amount, $w1, $w2, $w3, $w4);
-        
+    public function add($user_id, $source, $amount, $date, $description) {
+        $stmt = $this->conn->prepare("INSERT INTO incomes (user_id, source, amount, date, description) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("isdss", $user_id, $source, $amount, $date, $description);
         if ($stmt->execute()) {
-            return ["success" => true, "message" => "Income plan updated"];
+            return ["success" => true, "id" => $stmt->insert_id];
         }
-        return ["success" => false, "message" => "Database error"];
+        return ["success" => false];
     }
 
-    public function getYearlyBreakdown($user_id, $year) {
-        $stmt = $this->conn->prepare("SELECT month, amount FROM monthly_income_plans WHERE user_id = ? AND year = ?");
-        $stmt->bind_param("ii", $user_id, $year);
+    public function getAll($user_id, $start = null, $end = null) {
+        $sql = "SELECT * FROM incomes WHERE user_id = ?";
+        if ($start && $end) $sql .= " AND date BETWEEN ? AND ?";
+        $sql .= " ORDER BY date DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        if ($start && $end) $stmt->bind_param("iss", $user_id, $start, $end);
+        else $stmt->bind_param("i", $user_id);
+
         $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $data = [];
-        while($row = $result->fetch_assoc()) {
-            $data[$row['month']] = (float)$row['amount'];
-        }
-        
-        $finalData = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $finalData[] = [
-                "month" => $i,
-                "amount" => $data[$i] ?? 0
-            ];
-        }
-        
-        return $finalData;
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public function update($id, $user_id, $source, $amount, $date, $description) {
+        $stmt = $this->conn->prepare("UPDATE incomes SET source=?, amount=?, date=?, description=? WHERE id=? AND user_id=?");
+        $stmt->bind_param("sdssii", $source, $amount, $date, $description, $id, $user_id);
+        return $stmt->execute();
+    }
+
+    public function delete($id, $user_id) {
+        $stmt = $this->conn->prepare("DELETE FROM incomes WHERE id=? AND user_id=?");
+        $stmt->bind_param("ii", $id, $user_id);
+        return $stmt->execute();
     }
 }
 ?>

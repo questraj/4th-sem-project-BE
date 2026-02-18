@@ -33,40 +33,39 @@ class FutureExpense {
     }
 
     // Confirm: Move from Future -> Main Expenses
-    public function confirm($id, $user_id, $updatedData = null) {
-        // 1. Get the future expense
+    public function confirm($id, $userId, $updatedData = null) {
         $stmt = $this->conn->prepare("SELECT * FROM future_expenses WHERE id = ? AND user_id = ?");
-        $stmt->bind_param("ii", $id, $user_id);
+        $stmt->bind_param("ii", $id, $userId);
         $stmt->execute();
-        $future = $stmt->get_result()->fetch_assoc();
+        $orig = $stmt->get_result()->fetch_assoc();
 
-        if (!$future) return false;
+        if (!$orig) return false;
 
-        // 2. Use updated data if provided (user modified it), else use original
-        $cat = $updatedData['category_id'] ?? $future['category_id'];
-        $sub = $updatedData['sub_category_id'] ?? $future['sub_category_id'];
-        $amt = $updatedData['amount'] ?? $future['amount'];
-        $date = $updatedData['date'] ?? date('Y-m-d'); // Usually confirmed as 'Today'
-        $desc = $updatedData['description'] ?? $future['description'];
-        $src = $updatedData['source'] ?? $future['source'];
+        $cat  = $updatedData['category_id'] ?? $orig['category_id'];
+        $sub  = $updatedData['sub_category_id'] ?? $orig['sub_category_id'];
+        $amt  = $updatedData['amount'] ?? $orig['amount'];
+        $date = $updatedData['date'] ?? date('Y-m-d'); 
+        $desc = $updatedData['description'] ?? $orig['description'];
+        $src  = $updatedData['source'] ?? $orig['source'];
 
-        // 3. Insert into main expenses
-        $insert = $this->conn->prepare("
-            INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description, source) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        $insert->bind_param("iiidsss", $user_id, $cat, $sub, $amt, $date, $desc, $src);
-        
-        if ($insert->execute()) {
-            // 4. Mark future expense as processed
-            $update = $this->conn->prepare("UPDATE future_expenses SET status = 'PROCESSED' WHERE id = ?");
-            $update->bind_param("i", $id);
-            $update->execute();
+        $this->conn->begin_transaction();
+        try {
+            $ins = $this->conn->prepare("INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description, source) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $ins->bind_param("iiidsss", $userId, $cat, $sub, $amt, $date, $desc, $src);
+            $ins->execute();
+
+            $upd = $this->conn->prepare("UPDATE future_expenses SET status = 'PROCESSED' WHERE id = ?");
+            $upd->bind_param("i", $id);
+            $upd->execute();
+
+            $this->conn->commit();
             return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return false;
         }
-        return false;
     }
-     // Get ALL pending expenses (for the Activity Page list)
+
     public function getAllPending($user_id) {
         $stmt = $this->conn->prepare("
             SELECT f.*, c.category_name 
@@ -79,18 +78,14 @@ class FutureExpense {
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-        public function update($id, $user_id, $category_id, $amount, $date, $description) {
+
+    public function update($id, $user_id, $category_id, $amount, $date, $description) {
         $stmt = $this->conn->prepare("
             UPDATE future_expenses 
             SET category_id = ?, amount = ?, date = ?, description = ? 
             WHERE id = ? AND user_id = ? AND status = 'PENDING'
         ");
         $stmt->bind_param("idssii", $category_id, $amount, $date, $description, $id, $user_id);
-        
-        if ($stmt->execute()) {
-            return $stmt->affected_rows >= 0; // Return true even if no values changed but query ran
-        }
-        return false;
+        return $stmt->execute();
     }
 }
-?>
