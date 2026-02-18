@@ -54,12 +54,12 @@ CREATE TABLE users (
 );
 
 -- =============================================
--- 3. LOGGING & AUDIT (NEW FEATURE)
+-- 3. LOGGING & AUDIT
 -- =============================================
 CREATE TABLE transaction_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    action VARCHAR(50) NOT NULL, -- e.g., 'ADDED_EXPENSE', 'SCHEDULED_EXPENSE'
+    action VARCHAR(50) NOT NULL, -- e.g., 'ADDED_EXPENSE', 'UPDATED_INCOME'
     details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -70,7 +70,7 @@ CREATE TABLE transaction_logs (
 -- =============================================
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = System Category (Locked), ID = User Custom
+    user_id INT DEFAULT NULL, -- NULL = System Category, ID = User Custom
     category_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -89,7 +89,7 @@ CREATE TABLE sub_categories (
 -- 5. BUDGETING
 -- =============================================
 
--- A. The Yearly Planner (12 Boxes)
+-- Monthly breakdown with weekly limits
 CREATE TABLE monthly_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE monthly_budgets (
     UNIQUE KEY unique_month_year_budget (user_id, year, month)
 );
 
--- B. Category Specific Limits
+-- Category-specific limits
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- C. Legacy Budgets
+-- General/Legacy budgets (Weekly, Monthly, Yearly)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -142,6 +142,7 @@ CREATE TABLE incomes (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Yearly Income Planner
 CREATE TABLE monthly_income_plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -161,14 +162,14 @@ CREATE TABLE monthly_income_plans (
 -- 7. EXPENSES & FUTURE TRANSACTIONS
 -- =============================================
 
--- A. Future/Scheduled Expenses (NEW FEATURE)
+-- Future/Scheduled Expenses
 CREATE TABLE future_expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     category_id INT NOT NULL,
     sub_category_id INT DEFAULT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    date DATE NOT NULL, -- Future Date
+    date DATE NOT NULL, 
     description TEXT,
     source VARCHAR(50) DEFAULT 'Cash',
     status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PROCESSED
@@ -178,7 +179,7 @@ CREATE TABLE future_expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- B. Actual Expenses (History)
+-- Actual Expenses
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -194,7 +195,7 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- C. Expense Bill Uploads
+-- Expense Bill Attachments
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
@@ -204,26 +205,20 @@ CREATE TABLE expense_bills (
 );
 
 -- =============================================
--- 8. SEED DATA
+-- 8. SEED DATA (System Defaults)
 -- =============================================
 INSERT INTO categories (id, category_name) VALUES 
-(1, 'Food'), 
-(2, 'Transport'), 
-(3, 'Utilities'), 
-(4, 'Entertainment'), 
-(5, 'Health'),
-(6, 'Shopping'),
-(7, 'Education');
+(1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
+(5, 'Health'), (6, 'Shopping'), (7, 'Education');
 
 INSERT INTO sub_categories (category_id, name) VALUES 
-(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'), (1, 'Drinks'),
-(2, 'Bus/Train'), (2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
-(3, 'Electricity'), (3, 'Water'), (3, 'Internet'), (3, 'Phone Bill'),
-(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'), (4, 'Events'),
+(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'),
+(2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
+(3, 'Electricity'), (3, 'Water'), (3, 'Internet'),
+(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'),
 (5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
-(6, 'Clothes'), (6, 'Electronics'), (6, 'Home Decor'),
-(7, 'Tuition Fee'), (7, 'Books'), (7, 'Courses');
-
+(6, 'Clothes'), (6, 'Electronics'),
+(7, 'Tuition Fee'), (7, 'Books');
 Step 5: Run this in terminal to start server
 
 ````bash
