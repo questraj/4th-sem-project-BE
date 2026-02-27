@@ -195,6 +195,25 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
+-- Recurring Expenses
+CREATE TABLE recurring_expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    sub_category_id INT DEFAULT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    frequency ENUM('Weekly', 'Monthly', 'Yearly') NOT NULL,
+    start_date DATE NOT NULL,
+    next_due_date DATE NOT NULL,
+    description TEXT,
+    source VARCHAR(50) DEFAULT 'Cash',
+    status ENUM('ACTIVE', 'PAUSED', 'CANCELLED') DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+);
+
 -- Expense Bill Attachments
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
