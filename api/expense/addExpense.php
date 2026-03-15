@@ -40,9 +40,36 @@ if ($date > $today) {
 } else {
     // --- ADD AS ACTUAL EXPENSE ---
     $expense = new Expense($conn);
-    $result = $expense->add($userId, $category_id, $amount, $date, $description, $sub_category_id, $source);
+    $expenseId = $expense->add($userId, $category_id, $amount, $date, $description, $sub_category_id, $source);
 
-    if ($result) {
+    if ($expenseId) {
+        
+        // --- NEW: HANDLE FILE UPLOADS ---
+        if (isset($_FILES['bills']) && !empty($_FILES['bills']['name'][0])) {
+            $uploadDir = '../../uploads/bills/';
+            
+            // Create folder if it doesn't exist
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            
+            // Loop through all uploaded files
+            foreach ($_FILES['bills']['tmp_name'] as $key => $tmpName) {
+                // Generate a unique file name to prevent overwriting
+                $fileName = time() . '_' . basename($_FILES['bills']['name'][$key]);
+                $targetPath = $uploadDir . $fileName;
+                
+                // Move file and save to Database
+                if (move_uploaded_file($tmpName, $targetPath)) {
+                    $dbPath = 'uploads/bills/' . $fileName;
+                    $stmt = $conn->prepare("INSERT INTO expense_bills (expense_id, file_path) VALUES (?, ?)");
+                    $stmt->bind_param("is", $expenseId, $dbPath);
+                    $stmt->execute();
+                }
+            }
+        }
+        // --- END FILE UPLOAD LOGIC ---
+
         $logger->log($userId, "ADDED_EXPENSE", "Added NPR $amount via $source");
         sendResponse(true, "Expense added successfully");
     } else {

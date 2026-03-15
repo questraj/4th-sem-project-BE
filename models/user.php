@@ -8,7 +8,7 @@ class User {
         $this->conn = $db;
     }
 
-    public function register($email, $password, $first_name, $middle_name, $last_name, $bank_name = '', $bank_account_no = '') {
+    public function register($email, $password, $role, $first_name, $middle_name, $last_name, $bank_name = '', $bank_account_no = '') {
         $stmt = $this->conn->prepare("SELECT id FROM users WHERE email=?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -18,14 +18,15 @@ class User {
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
+        // ADDED ROLE TO INSERT STATEMENT
         $stmt = $this->conn->prepare("
-            INSERT INTO users (email, password, first_name, middle_name, last_name, bank_name, bank_account_no) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (email, password, role, first_name, middle_name, last_name, bank_name, bank_account_no) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("sssssss", $email, $hashedPassword, $first_name, $middle_name, $last_name, $bank_name, $bank_account_no);
+        $stmt->bind_param("ssssssss", $email, $hashedPassword, $role, $first_name, $middle_name, $last_name, $bank_name, $bank_account_no);
         
         if ($stmt->execute()) {
-            return ["success" => true, "message" => "Registration successful"];
+            return ["success" => true, "message" => "Registration successful", "user_id" => $stmt->insert_id];
         }
         return ["success" => false, "message" => "Registration failed"];
     }

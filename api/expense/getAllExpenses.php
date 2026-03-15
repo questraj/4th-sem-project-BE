@@ -16,7 +16,8 @@ $sql = "
         e.category_id,
         c.category_name, 
         e.sub_category_id,
-        s.name as sub_category_name
+        s.name as sub_category_name,
+        (SELECT GROUP_CONCAT(file_path SEPARATOR ',') FROM expense_bills WHERE expense_id = e.id) as bills
     FROM expenses e
     JOIN categories c ON e.category_id = c.id
     LEFT JOIN sub_categories s ON e.sub_category_id = s.id
@@ -42,6 +43,13 @@ $result = $stmt->get_result();
 
 $data = [];
 while ($row = $result->fetch_assoc()) {
+    // Parse the comma-separated string into an actual array
+    if ($row['bills']) {
+        $row['bills'] = explode(',', $row['bills']);
+    } else {
+        $row['bills'] = [];
+    }
+    
     $data[] = $row;
 }
 

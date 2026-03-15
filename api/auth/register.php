@@ -12,11 +12,17 @@ if (!$data) $data = $_POST;
 
 $email      = filter_var(trim($data['email'] ?? ''), FILTER_SANITIZE_EMAIL);
 $password   = trim($data['password'] ?? '');
+$role       = trim($data['role'] ?? 'student'); // NEW: Get role, default to student
 $first_name = trim($data['first_name'] ?? '');
 $last_name  = trim($data['last_name'] ?? '');
 $mid_name   = trim($data['middle_name'] ?? '');
 $bank_name  = trim($data['bank_name'] ?? '');
 $bank_acc   = trim($data['bank_account_no'] ?? '');
+
+// Ensure role is valid
+if (!in_array($role, ['student', 'parent'])) {
+    $role = 'student';
+}
 
 if (empty($email) || empty($password) || empty($first_name) || empty($last_name)) {
     sendResponse(false, "Name, Email, and Password are required.");
@@ -31,7 +37,7 @@ if (strlen($password) < 6) {
 }
 
 $userModel = new User($conn);
-$result = $userModel->register($email, $password, $first_name, $mid_name, $last_name, $bank_name, $bank_acc);
+$result = $userModel->register($email, $password, $role, $first_name, $mid_name, $last_name, $bank_name, $bank_acc);
 
 echo json_encode($result);
 ?>

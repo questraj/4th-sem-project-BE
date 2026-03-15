@@ -39,12 +39,13 @@ CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
 -- =============================================
--- 2. USERS TABLE
+-- 2. USERS TABLE (Updated with Role)
 -- =============================================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role ENUM('student', 'parent') NOT NULL DEFAULT 'student',
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
@@ -54,7 +55,21 @@ CREATE TABLE users (
 );
 
 -- =============================================
--- 3. LOGGING & AUDIT
+-- 3. FAMILY LINKING (Handshake System)
+-- =============================================
+CREATE TABLE family_links (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    parent_id INT NOT NULL,
+    student_id INT NOT NULL,
+    status ENUM('PENDING', 'ACTIVE') DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_family_link (parent_id, student_id)
+);
+
+-- =============================================
+-- 4. LOGGING & AUDIT
 -- =============================================
 CREATE TABLE transaction_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -66,7 +81,7 @@ CREATE TABLE transaction_logs (
 );
 
 -- =============================================
--- 4. CATEGORIES & SUB-CATEGORIES
+-- 5. CATEGORIES & SUB-CATEGORIES
 -- =============================================
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -86,7 +101,7 @@ CREATE TABLE sub_categories (
 );
 
 -- =============================================
--- 5. BUDGETING
+-- 6. BUDGETING
 -- =============================================
 
 -- Monthly breakdown with weekly limits
@@ -117,7 +132,7 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- General/Legacy budgets (Weekly, Monthly, Yearly)
+-- General budgets (Weekly, Monthly, Yearly)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -129,7 +144,7 @@ CREATE TABLE budgets (
 );
 
 -- =============================================
--- 6. INCOME MODULE
+-- 7. INCOME MODULE
 -- =============================================
 CREATE TABLE incomes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -159,7 +174,7 @@ CREATE TABLE monthly_income_plans (
 );
 
 -- =============================================
--- 7. EXPENSES & FUTURE TRANSACTIONS
+-- 8. EXPENSES & FUTURE TRANSACTIONS
 -- =============================================
 
 -- Future/Scheduled Expenses
@@ -195,7 +210,7 @@ CREATE TABLE expenses (
     FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
 );
 
--- Recurring Expenses
+-- Recurring Expenses (Templates)
 CREATE TABLE recurring_expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -224,7 +239,7 @@ CREATE TABLE expense_bills (
 );
 
 -- =============================================
--- 8. SEED DATA (System Defaults)
+-- 9. SEED DATA (System Defaults)
 -- =============================================
 INSERT INTO categories (id, category_name) VALUES 
 (1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
@@ -238,7 +253,6 @@ INSERT INTO sub_categories (category_id, name) VALUES
 (5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
 (6, 'Clothes'), (6, 'Electronics'),
 (7, 'Tuition Fee'), (7, 'Books');
-
 ````
 Step 5: Run this in terminal to start server
 

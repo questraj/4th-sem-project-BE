@@ -26,7 +26,8 @@ if ($result['success']) {
         "user" => [
             "id" => $user['id'],
             "name" => $user['first_name'] . ' ' . $user['last_name'],
-            "email" => $user['email']
+            "email" => $user['email'],
+            "role" => $user['role'] // NEW: Pass the role back to React
         ]
     ]);
 } else {

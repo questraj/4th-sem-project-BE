@@ -8,16 +8,21 @@ class Expense {
         $this->conn = $db;
     }
 
-     public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id = NULL, $source = "Cash") {
+    public function add($user_id, $category_id, $amount, $date, $description, $sub_category_id = NULL, $source = "Cash") {
         $stmt = $this->conn->prepare("
             INSERT INTO expenses (user_id, category_id, sub_category_id, amount, date, description, source) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->bind_param("iiidsss", $user_id, $category_id, $sub_category_id, $amount, $date, $description, $source);
-        return $stmt->execute();
+        
+        // CHANGED: Return the new ID instead of a boolean
+        if ($stmt->execute()) {
+            return $stmt->insert_id; 
+        }
+        return false;
     }
 
-    // Get all expenses for a user
+    // Get all expenses for a user (Standard model method, though API uses custom query)
     public function getAll($user_id) {
         $stmt = $this->conn->prepare("
             SELECT e.id, e.amount, e.date, e.description, c.category_name, c.id as category_id
