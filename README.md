@@ -228,7 +228,7 @@ INSERT INTO categories (id, category_name) VALUES
 (1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
 (5, 'Health'), (6, 'Shopping'), (7, 'Education');
 
--- Add an admin user (Password: password123)
+-- Add an admin user (Password: password)
 INSERT INTO users (email, password, role, first_name, last_name) VALUES 
 ('admin@admin.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Admin');
 ````
