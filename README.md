@@ -31,21 +31,21 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- =============================================
--- 1. RESET DATABASE
+-- -- =============================================
+-- 1. DATABASE SETUP
 -- =============================================
 DROP DATABASE IF EXISTS expense_tracker;
 CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
 -- =============================================
--- 2. USERS TABLE (Updated with Role)
+-- 2. USERS TABLE
 -- =============================================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'parent') NOT NULL DEFAULT 'student',
+    role ENUM('student', 'parent', 'admin') NOT NULL DEFAULT 'student',
     first_name VARCHAR(100) NOT NULL,
     middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE users (
 );
 
 -- =============================================
--- 3. FAMILY LINKING (Handshake System)
+-- 3. FAMILY LINKING
 -- =============================================
 CREATE TABLE family_links (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,7 +74,7 @@ CREATE TABLE family_links (
 CREATE TABLE transaction_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    action VARCHAR(50) NOT NULL, -- e.g., 'ADDED_EXPENSE', 'UPDATED_INCOME'
+    action VARCHAR(50) NOT NULL,
     details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -85,7 +85,7 @@ CREATE TABLE transaction_logs (
 -- =============================================
 CREATE TABLE categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL, -- NULL = System Category, ID = User Custom
+    user_id INT DEFAULT NULL, 
     category_name VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -103,8 +103,6 @@ CREATE TABLE sub_categories (
 -- =============================================
 -- 6. BUDGETING
 -- =============================================
-
--- Monthly breakdown with weekly limits
 CREATE TABLE monthly_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -120,7 +118,6 @@ CREATE TABLE monthly_budgets (
     UNIQUE KEY unique_month_year_budget (user_id, year, month)
 );
 
--- Category-specific limits
 CREATE TABLE category_budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -132,7 +129,6 @@ CREATE TABLE category_budgets (
     UNIQUE KEY unique_user_category (user_id, category_id)
 );
 
--- General budgets (Weekly, Monthly, Yearly)
 CREATE TABLE budgets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -157,27 +153,20 @@ CREATE TABLE incomes (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Yearly Income Planner
 CREATE TABLE monthly_income_plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     year INT NOT NULL,
     month INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    week1 DECIMAL(10, 2) DEFAULT 0,
-    week2 DECIMAL(10, 2) DEFAULT 0,
-    week3 DECIMAL(10, 2) DEFAULT 0,
-    week4 DECIMAL(10, 2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_month_year_income (user_id, year, month)
 );
 
 -- =============================================
--- 8. EXPENSES & FUTURE TRANSACTIONS
+-- 8. EXPENSES
 -- =============================================
-
--- Future/Scheduled Expenses
 CREATE TABLE future_expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -187,14 +176,12 @@ CREATE TABLE future_expenses (
     date DATE NOT NULL, 
     description TEXT,
     source VARCHAR(50) DEFAULT 'Cash',
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PROCESSED
+    status VARCHAR(20) DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id),
-    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Actual Expenses
 CREATE TABLE expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -206,11 +193,9 @@ CREATE TABLE expenses (
     source VARCHAR(50) DEFAULT 'Cash',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id),
-    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Recurring Expenses (Templates)
 CREATE TABLE recurring_expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -225,11 +210,9 @@ CREATE TABLE recurring_expenses (
     status ENUM('ACTIVE', 'PAUSED', 'CANCELLED') DEFAULT 'ACTIVE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id),
-    FOREIGN KEY (sub_category_id) REFERENCES sub_categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Expense Bill Attachments
 CREATE TABLE expense_bills (
     id INT AUTO_INCREMENT PRIMARY KEY,
     expense_id INT NOT NULL,
@@ -239,20 +222,15 @@ CREATE TABLE expense_bills (
 );
 
 -- =============================================
--- 9. SEED DATA (System Defaults)
+-- 9. SEED DATA
 -- =============================================
 INSERT INTO categories (id, category_name) VALUES 
 (1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
 (5, 'Health'), (6, 'Shopping'), (7, 'Education');
 
-INSERT INTO sub_categories (category_id, name) VALUES 
-(1, 'Groceries'), (1, 'Restaurant'), (1, 'Snacks'),
-(2, 'Taxi/Uber'), (2, 'Fuel'), (2, 'Maintenance'),
-(3, 'Electricity'), (3, 'Water'), (3, 'Internet'),
-(4, 'Movies'), (4, 'Games'), (4, 'Subscriptions'),
-(5, 'Medicine'), (5, 'Doctor Fee'), (5, 'Gym'),
-(6, 'Clothes'), (6, 'Electronics'),
-(7, 'Tuition Fee'), (7, 'Books');
+-- Add an admin user (Password: password123)
+INSERT INTO users (email, password, role, first_name, last_name) VALUES 
+('admin@admin.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Admin');
 ````
 Step 5: Run this in terminal to start server
 

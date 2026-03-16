@@ -19,7 +19,6 @@ class Family {
 
     // 1. Parent requests to link an existing student account
     public function requestLink($parentId, $studentEmail) {
-        // Find the student by email
         $stmt = $this->conn->prepare("SELECT id, role FROM users WHERE email = ?");
         $stmt->bind_param("s", $studentEmail);
         $stmt->execute();
@@ -30,7 +29,6 @@ class Family {
 
         $studentId = $student['id'];
 
-        // Check if link already exists
         $check = $this->conn->prepare("SELECT id, status FROM family_links WHERE parent_id = ? AND student_id = ?");
         $check->bind_param("ii", $parentId, $studentId);
         $check->execute();
@@ -41,7 +39,6 @@ class Family {
             return ["success" => false, "message" => "Link request already pending."];
         }
 
-        // Create Pending Link
         $insert = $this->conn->prepare("INSERT INTO family_links (parent_id, student_id, status) VALUES (?, ?, 'PENDING')");
         $insert->bind_param("ii", $parentId, $studentId);
         
@@ -98,6 +95,13 @@ class Family {
         $stmt->bind_param("ii", $parentId, $studentId);
         $stmt->execute();
         return $stmt->get_result()->num_rows > 0;
+    }
+
+    // 5. Parent UNLINKS a student
+    public function unlinkStudent($parentId, $studentId) {
+        $stmt = $this->conn->prepare("DELETE FROM family_links WHERE parent_id = ? AND student_id = ?");
+        $stmt->bind_param("ii", $parentId, $studentId);
+        return $stmt->execute();
     }
 }
 ?>

@@ -16,9 +16,26 @@ if ($amount === false || $amount < 0) {
 }
 
 $budget = new Budget($conn);
+// This updates the general `budgets` table
 $result = $budget->setBudget($userId, $amount, $type);
 
 if ($result['success']) {
+    
+    // NEW: If type is Monthly, sync with the specific monthly_budgets table 
+    // to ensure the dashboard instantly reflects the change for the current filter.
+    if ($type === 'Monthly') {
+        $month = $data['month'] ?? date('m');
+        $year = $data['year'] ?? date('Y');
+        
+        $stmtSync = $conn->prepare("
+            INSERT INTO monthly_budgets (user_id, year, month, amount) 
+            VALUES (?, ?, ?, ?) 
+            ON DUPLICATE KEY UPDATE amount = VALUES(amount)
+        ");
+        $stmtSync->bind_param("iiid", $userId, $year, $month, $amount);
+        $stmtSync->execute();
+    }
+
     // LOGGING
     $logger = new TransactionLog($conn);
     $logger->log($userId, "SET_BUDGET", "Set $type budget to $amount");
