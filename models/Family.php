@@ -103,5 +103,12 @@ class Family {
         $stmt->bind_param("ii", $parentId, $studentId);
         return $stmt->execute();
     }
+
+    // 6. Student UNLINKS a parent
+    public function unlinkParent($studentId, $parentId) {
+        $stmt = $this->conn->prepare("DELETE FROM family_links WHERE student_id = ? AND parent_id = ?");
+        $stmt->bind_param("ii", $studentId, $parentId);
+        return $stmt->execute();
+    }
 }
 ?>

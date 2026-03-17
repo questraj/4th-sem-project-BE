@@ -15,7 +15,7 @@ if ($user) {
     // 2. If the user is a student, fetch their parent linking status
     if ($user['role'] === 'student') {
         $linkStmt = $conn->prepare("
-            SELECT u.first_name, u.last_name, u.email, fl.status 
+            SELECT u.id AS parent_id, u.first_name, u.last_name, u.email, fl.status 
             FROM family_links fl 
             JOIN users u ON fl.parent_id = u.id 
             WHERE fl.student_id = ?
@@ -24,7 +24,7 @@ if ($user) {
         $linkStmt->execute();
         
         $links = $linkStmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        $user['family_links'] = $links; // Attach link data to the profile response
+        $user['family_links'] = $links; 
     }
 
     sendResponse(true, "Profile fetched", $user);

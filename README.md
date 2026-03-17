@@ -31,7 +31,8 @@ localhost/phpmyadmin
 and create a new database called expense_tracker and in the SQL section paste this code and run
 
 ````bash
--- -- =============================================
+
+-- =============================================
 -- 1. DATABASE SETUP
 -- =============================================
 DROP DATABASE IF EXISTS expense_tracker;
@@ -39,7 +40,7 @@ CREATE DATABASE expense_tracker;
 USE expense_tracker;
 
 -- =============================================
--- 2. USERS TABLE
+-- 2. USERS TABLE (UPDATED WITH OTP COLUMNS)
 -- =============================================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -51,6 +52,9 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     bank_name VARCHAR(100) DEFAULT NULL,
     bank_account_no VARCHAR(50) DEFAULT NULL,
+    is_verified TINYINT(1) DEFAULT 0,   -- NEW: 0 = unverified, 1 = verified
+    otp VARCHAR(6) DEFAULT NULL,        -- NEW: Stores the 6-digit code
+    otp_expiry DATETIME DEFAULT NULL,   -- NEW: Stores when the OTP expires
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -228,9 +232,10 @@ INSERT INTO categories (id, category_name) VALUES
 (1, 'Food'), (2, 'Transport'), (3, 'Utilities'), (4, 'Entertainment'), 
 (5, 'Health'), (6, 'Shopping'), (7, 'Education');
 
--- Add an admin user (Password: password)
-INSERT INTO users (email, password, role, first_name, last_name) VALUES 
-('admin@admin.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Admin');
+-- Add an admin user (Password: password). Set to is_verified = 1 automatically.
+INSERT INTO users (email, password, role, first_name, last_name, is_verified) VALUES 
+('admin@admin.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Admin', 1);
+
 ````
 Step 5: Run this in terminal to start server
 

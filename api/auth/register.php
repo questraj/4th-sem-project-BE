@@ -1,6 +1,7 @@
 <?php
 require_once "../../config/db.php";
 require_once "../../models/User.php";
+require_once "../../utils/mailer.php"; // Import the mailer function
 
 function sendResponse($success, $message) {
     echo json_encode(["success" => $success, "message" => $message]);
@@ -12,7 +13,7 @@ if (!$data) $data = $_POST;
 
 $email      = filter_var(trim($data['email'] ?? ''), FILTER_SANITIZE_EMAIL);
 $password   = trim($data['password'] ?? '');
-$role       = trim($data['role'] ?? 'student'); // NEW: Get role, default to student
+$role       = trim($data['role'] ?? 'student');
 $first_name = trim($data['first_name'] ?? '');
 $last_name  = trim($data['last_name'] ?? '');
 $mid_name   = trim($data['middle_name'] ?? '');
@@ -38,6 +39,24 @@ if (strlen($password) < 6) {
 
 $userModel = new User($conn);
 $result = $userModel->register($email, $password, $role, $first_name, $mid_name, $last_name, $bank_name, $bank_acc);
+
+// --- NEW: SEND WELCOME EMAIL ---
+if ($result['success']) {
+    $subject = "Welcome to Expense Tracker!";
+    $body = "
+        <div style='font-family: Arial, sans-serif; color: #333;'>
+            <h2>Hello $first_name $last_name,</h2>
+            <p>Welcome to <b>Expense Tracker</b>!</p>
+            <p>Your account has been successfully created as a <b>" . ucfirst($role) . "</b>.</p>
+            <p>You can now log in and start tracking your finances.</p>
+            <br>
+            <p>Best Regards,<br>Expense Tracker Team</p>
+        </div>
+    ";
+    
+    // Call the email function
+    sendEmail($email, "$first_name $last_name", $subject, $body);
+}
 
 echo json_encode($result);
 ?>
