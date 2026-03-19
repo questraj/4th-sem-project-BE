@@ -75,16 +75,30 @@ class Admin {
         $stats = ["total_income" => 0, "total_expense" => 0, "total_budget" => 0];
 
         $condDate = $this->getDateCondition($period, $month, $year, 'date');
-        $condCreated = $this->getDateCondition($period, $month, $year, 'created_at');
 
+        // Get Income
         $inc = $this->conn->query("SELECT SUM(amount) as total FROM incomes WHERE $condDate")->fetch_assoc();
         $stats['total_income'] = $inc['total'] ?? 0;
 
+        // Get Expense
         $exp = $this->conn->query("SELECT SUM(amount) as total FROM expenses WHERE $condDate")->fetch_assoc();
         $stats['total_expense'] = $exp['total'] ?? 0;
 
-        $bud = $this->conn->query("SELECT SUM(amount) as total FROM budgets WHERE $condCreated")->fetch_assoc();
-        $stats['total_budget'] = $bud['total'] ?? 0;
+        // FIXED BUDGET LOGIC: Pull from 'monthly_budgets' based on the selected period
+        if (strcasecmp($period, 'Monthly') == 0) {
+            $sql = "SELECT SUM(amount) as total FROM monthly_budgets WHERE month = " . intval($month) . " AND year = " . intval($year);
+            $bud = $this->conn->query($sql)->fetch_assoc();
+            $stats['total_budget'] = $bud['total'] ?? 0;
+        } elseif (strcasecmp($period, 'Yearly') == 0) {
+            $sql = "SELECT SUM(amount) as total FROM monthly_budgets WHERE year = " . intval($year);
+            $bud = $this->conn->query($sql)->fetch_assoc();
+            $stats['total_budget'] = $bud['total'] ?? 0;
+        } else {
+            // Fallback for weekly
+            $condCreated = $this->getDateCondition($period, $month, $year, 'created_at');
+            $bud = $this->conn->query("SELECT SUM(amount) as total FROM budgets WHERE $condCreated")->fetch_assoc();
+            $stats['total_budget'] = $bud['total'] ?? 0;
+        }
 
         return $stats;
     }
@@ -95,16 +109,40 @@ class Admin {
 
         $condDateInc = $this->getDateCondition($period, $month, $year, 'date');
         $condDateExp = $this->getDateCondition($period, $month, $year, 'e.date');
-        $condCreatedBud = $this->getDateCondition($period, $month, $year, 'created_at');
 
+        // Fetch Incomes
         $inc = $this->conn->query("SELECT source as name, SUM(amount) as value FROM incomes WHERE $condDateInc GROUP BY source");
-        while ($row = $inc->fetch_assoc()) { $data['income'][] = ["name" => $row['name'], "value" => (float)$row['value']]; }
+        while ($row = $inc->fetch_assoc()) { 
+            if ($row['value'] > 0) $data['income'][] = ["name" => $row['name'], "value" => (float)$row['value']]; 
+        }
 
+        // Fetch Expenses
         $exp = $this->conn->query("SELECT c.category_name as name, SUM(e.amount) as value FROM expenses e JOIN categories c ON e.category_id = c.id WHERE $condDateExp GROUP BY c.category_name");
-        while ($row = $exp->fetch_assoc()) { $data['expense'][] = ["name" => $row['name'], "value" => (float)$row['value']]; }
+        while ($row = $exp->fetch_assoc()) { 
+            if ($row['value'] > 0) $data['expense'][] = ["name" => $row['name'], "value" => (float)$row['value']]; 
+        }
 
-        $bud = $this->conn->query("SELECT type as name, SUM(amount) as value FROM budgets WHERE $condCreatedBud GROUP BY type");
-        while ($row = $bud->fetch_assoc()) { $data['budget'][] = ["name" => $row['name'], "value" => (float)$row['value']]; }
+        // FIXED BUDGET PIE CHART LOGIC
+        if (strcasecmp($period, 'Monthly') == 0) {
+            $sql = "SELECT 'Monthly Plans' as name, SUM(amount) as value FROM monthly_budgets WHERE month = " . intval($month) . " AND year = " . intval($year);
+            $bud = $this->conn->query($sql);
+            while ($row = $bud->fetch_assoc()) { 
+                if ($row['value'] > 0) $data['budget'][] = ["name" => $row['name'], "value" => (float)$row['value']]; 
+            }
+        } elseif (strcasecmp($period, 'Yearly') == 0) {
+            $sql = "SELECT 'Yearly Plans' as name, SUM(amount) as value FROM monthly_budgets WHERE year = " . intval($year);
+            $bud = $this->conn->query($sql);
+            while ($row = $bud->fetch_assoc()) { 
+                if ($row['value'] > 0) $data['budget'][] = ["name" => $row['name'], "value" => (float)$row['value']]; 
+            }
+        } else {
+             // Fallback for weekly
+            $condCreated = $this->getDateCondition($period, $month, $year, 'created_at');
+            $bud = $this->conn->query("SELECT type as name, SUM(amount) as value FROM budgets WHERE $condCreated GROUP BY type");
+            while ($row = $bud->fetch_assoc()) { 
+                if ($row['value'] > 0) $data['budget'][] = ["name" => $row['name'], "value" => (float)$row['value']]; 
+            }
+        }
 
         return $data;
     }
